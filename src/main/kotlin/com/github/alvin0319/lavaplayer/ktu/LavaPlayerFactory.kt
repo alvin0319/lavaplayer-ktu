@@ -39,6 +39,11 @@ object LavaPlayerFactory {
         Permission.PRIORITY_SPEAKER
     )
 
+    /**
+     * Constructs a [PlayerInfo] for the given [JDA] and [Guild].
+     * @param jda The JDA instance.
+     * @param guild The guild.
+     */
     @JvmStatic
     fun createPlayer(jda: JDA, guild: Guild): PlayerInfo {
         requiredIntents.forEach { intent ->
@@ -63,7 +68,23 @@ object LavaPlayerFactory {
         }
     }
 
+    /**
+     * Get the player info for the specified guild.
+     * @param jda The JDA instance.
+     * @param guild The guild to get the player info for.
+     */
+    @JvmStatic
     fun getPlayer(jda: JDA, guild: Guild): PlayerInfo? {
         return audioPlayers.getOrPut(jda, ::mutableMapOf)[guild]
+    }
+
+    /**
+     * Used to destroy the audio player.
+     * @param playerInfo The player info to destroy.
+     */
+    @JvmStatic
+    fun removePlayer(playerInfo: PlayerInfo) {
+        playerInfo.disconnect()
+        audioPlayers[playerInfo.jda]?.remove(playerInfo.guild)
     }
 }

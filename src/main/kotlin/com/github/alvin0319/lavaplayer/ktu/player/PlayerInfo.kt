@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.entities.Guild
 import java.util.LinkedList
 
 class PlayerInfo(
-    private val jda: JDA,
+    val jda: JDA,
     val guild: Guild
 ) {
     var currentPlayingTrack: AudioTrack? = null
@@ -32,10 +32,10 @@ class PlayerInfo(
     var trackScheduler: AudioEventAdapter = TrackScheduler(jda, this, trackEventCallbackHandler)
 
     /**
-     * Let the bot join the [AudioChannel]
+     * Join the given [AudioChannel]
      * @param audioChannel the [AudioChannel] to join
-     * @param forceMoveChannel if true, the bot will move itself to the given audio channel, otherwise it will throw an IllegalStateException
-     * @throws IllegalStateException if the bot is already in the given audio channel
+     * @param forceMoveChannel if true, the bot will move itself to the given audio channel, otherwise it will throw an [IllegalStateException]
+     * @throws IllegalStateException if the bot is already connected to the audio channel
      */
     @JvmOverloads
     @Throws(IllegalStateException::class)
@@ -47,13 +47,15 @@ class PlayerInfo(
             guild.moveVoiceMember(guild.selfMember, audioChannel)
         } else {
             audioChannel.guild.audioManager.openAudioConnection(audioChannel)
-            audioPlayer = LavaPlayerFactory.audioPlayerManager.createPlayer()
+            audioPlayer = LavaPlayerFactory.audioPlayerManager.createPlayer().apply {
+                addListener(trackScheduler)
+            }
         }
         joinedAudioChannel = audioChannel
     }
 
     /**
-     * Let the bot play the given [AudioTrack]
+     * Starts playing the given [AudioTrack]
      * @param track the [AudioTrack] to play
      * @throws IllegalStateException if the bot is not in the audio channel, or the bot is already playing a track
      */
@@ -79,4 +81,17 @@ class PlayerInfo(
     }
 
     fun isChannelJoined(): Boolean = joinedAudioChannel != null
+
+    /**
+     * Immediately stops the current playing track and disconnects from the [AudioChannel]
+     */
+    fun disconnect() {
+        joinedAudioChannel?.guild?.audioManager?.closeAudioConnection()
+        joinedAudioChannel = null
+        audioPlayer?.destroy()
+        audioPlayer = null
+        currentPlayingTrack = null
+    }
+
+    fun isPlaying(): Boolean = audioPlayer != null && audioPlayer!!.playingTrack != null && currentPlayingTrack != null
 }
