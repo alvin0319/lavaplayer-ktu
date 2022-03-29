@@ -7,7 +7,7 @@ plugins {
 
 val lavaplayerVersion = "daa26c85b8829bf7f267444c538d20aeb7875a72"
 
-group = "dev.minjae.lavaplayer-ktu"
+group = "com.github.alvin0319.lavaplayer-ktu"
 version = "1.0-SNAPSHOT"
 
 repositories {
