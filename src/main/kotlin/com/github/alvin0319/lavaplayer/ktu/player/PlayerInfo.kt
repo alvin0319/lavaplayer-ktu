@@ -43,6 +43,10 @@ class PlayerInfo(
         if (joinedAudioChannel != null && !forceMoveChannel) {
             throw IllegalStateException("Cannot join audio channel")
         }
+        if (guild.selfMember.voiceState?.isGuildDeafened == false) {
+            // prevent bandwidth usage
+            guild.deafen(guild.selfMember, true).queue(null) {}
+        }
         if (joinedAudioChannel != null && audioPlayer != null) {
             guild.moveVoiceMember(guild.selfMember, audioChannel)
         } else {
@@ -76,11 +80,26 @@ class PlayerInfo(
      * Do not call this manually.
      * @param newAudioChannel the audio channel to move to
      */
-    fun moveAudioChannel(newAudioChannel: AudioChannel) {
+    fun internalMoveAudioChannel(newAudioChannel: AudioChannel) {
         this.joinedAudioChannel = newAudioChannel
     }
 
-    fun isChannelJoined(): Boolean = joinedAudioChannel != null
+    fun moveAudioChannel(newAudioChannel: AudioChannel) {
+        if (joinedAudioChannel == newAudioChannel) {
+            throw IllegalArgumentException("Cannot move to the same audio channel")
+        }
+        if (joinedAudioChannel == null) {
+            throw IllegalStateException("Cannot move audio channel while not connected to any audio channel")
+        }
+        guild.moveVoiceMember(guild.selfMember, newAudioChannel).queue(null) {}
+    }
+
+    fun isChannelJoined(): Boolean = joinedAudioChannel != null && audioPlayer != null
+
+    /**
+     * Returns whether the bot is currently connected to an audio channel.
+     */
+    fun isConnected(): Boolean = isChannelJoined() && guild.selfMember.voiceState?.inAudioChannel() == true
 
     /**
      * Immediately stops the current playing track and disconnects from the [AudioChannel]
@@ -94,4 +113,10 @@ class PlayerInfo(
     }
 
     fun isPlaying(): Boolean = audioPlayer != null && audioPlayer!!.playingTrack != null && currentPlayingTrack != null
+
+    fun setPaused(paused: Boolean) {
+        audioPlayer?.isPaused = paused
+    }
+
+    fun isPaused(): Boolean = audioPlayer?.isPaused ?: false
 }

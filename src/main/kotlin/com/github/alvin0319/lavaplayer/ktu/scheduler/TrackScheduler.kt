@@ -35,7 +35,6 @@ class TrackScheduler(
     }
 
     override fun onTrackEnd(player: AudioPlayer, track: AudioTrack, endReason: AudioTrackEndReason) {
-        trackEventCallbackHandler.trackEnd(player, track, endReason)
         if (endReason.mayStartNext || endReason == AudioTrackEndReason.REPLACED) {
             if (playerInfo.trackQueue.isNotEmpty()) {
                 if (playerInfo.repeat) {
@@ -50,6 +49,7 @@ class TrackScheduler(
                 return
             }
         }
+        trackEventCallbackHandler.trackEnd(player, track, endReason)
         playerInfo.currentPlayingTrack = null
     }
 

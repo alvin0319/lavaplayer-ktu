@@ -40,7 +40,7 @@ object LavaPlayerFactory {
     )
 
     /**
-     * Constructs a [PlayerInfo] for the given [JDA] and [Guild].
+     * Constructs a [PlayerInfo] from the given [JDA] and [Guild].
      * @param jda The JDA instance.
      * @param guild The guild.
      */
@@ -71,7 +71,7 @@ object LavaPlayerFactory {
     /**
      * Get the player info for the specified guild.
      * @param jda The JDA instance.
-     * @param guild The guild to get the player info for.
+     * @param guild The guild to get the [PlayerInfo] for.
      */
     @JvmStatic
     fun getPlayer(jda: JDA, guild: Guild): PlayerInfo? {
@@ -80,7 +80,7 @@ object LavaPlayerFactory {
 
     /**
      * Used to destroy the audio player.
-     * @param playerInfo The player info to destroy.
+     * @param playerInfo The [PlayerInfo] to destroy.
      */
     @JvmStatic
     fun removePlayer(playerInfo: PlayerInfo) {
