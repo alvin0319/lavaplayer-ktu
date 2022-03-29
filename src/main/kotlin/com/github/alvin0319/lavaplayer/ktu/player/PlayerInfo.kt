@@ -3,8 +3,11 @@ package com.github.alvin0319.lavaplayer.ktu.player
 import com.github.alvin0319.lavaplayer.ktu.LavaPlayerFactory
 import com.github.alvin0319.lavaplayer.ktu.scheduler.TrackEventCallbackHandler
 import com.github.alvin0319.lavaplayer.ktu.scheduler.TrackScheduler
+import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.AudioChannel
@@ -30,6 +33,23 @@ class PlayerInfo(
     val trackEventCallbackHandler = TrackEventCallbackHandler()
 
     var trackScheduler: AudioEventAdapter = TrackScheduler(jda, this, trackEventCallbackHandler)
+
+    var trackLoadHandler: (List<AudioTrack>, Boolean) -> Unit = { tracks, isFromPlaylist ->
+        if (isFromPlaylist) {
+            if (trackQueue.isNotEmpty()) {
+                trackQueue.addAll(tracks)
+            } else {
+                playTrack(tracks.first())
+                trackQueue.addAll(tracks.subList(1, tracks.size))
+            }
+        } else {
+            if (trackQueue.isNotEmpty()) {
+                playTrack(tracks.first())
+            } else {
+                trackQueue.add(tracks[0])
+            }
+        }
+    }
 
     /**
      * Join the given [AudioChannel]
@@ -114,9 +134,57 @@ class PlayerInfo(
 
     fun isPlaying(): Boolean = audioPlayer != null && audioPlayer!!.playingTrack != null && currentPlayingTrack != null
 
+    /**
+     * @param paused whether to pause track or not.
+     */
     fun setPaused(paused: Boolean) {
         audioPlayer?.isPaused = paused
     }
 
+    /**
+     * @return whether the track is currently paused.
+     */
     fun isPaused(): Boolean = audioPlayer?.isPaused ?: false
+
+    /**
+     * Sets the volume of the track
+     * @param volume the volume to set the track to.
+     */
+    fun setVolume(volume: Int) {
+        audioPlayer?.volume = volume
+    }
+
+    /**
+     * @return the current volume of the track.
+     */
+    fun getVolume(): Int = audioPlayer?.volume ?: 0
+
+    /**
+     * Searches for a track with the given query and plays it.
+     * @param query the query to search for. If query is URL, it will be just used as a URL. otherwise, it will be searched and load all of them.
+     */
+    fun search(query: String) {
+        // check if query contains https or http
+        val regex = Regex("(https?://.*)|(www\\..*)")
+        LavaPlayerFactory.audioPlayerManager.loadItem(
+            if (regex.matches(query)) query else "ytsearch:$query",
+            object : AudioLoadResultHandler {
+                override fun trackLoaded(track: AudioTrack) {
+                    trackLoadHandler(listOf(track), false)
+                }
+
+                override fun playlistLoaded(playlist: AudioPlaylist) {
+                    trackLoadHandler(playlist.tracks, true)
+                }
+
+                override fun noMatches() {
+                    trackLoadHandler(listOf(), false)
+                }
+
+                override fun loadFailed(exception: FriendlyException?) {
+                    trackLoadHandler(listOf(), false)
+                }
+            }
+        )
+    }
 }
